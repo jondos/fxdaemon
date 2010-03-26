@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" 
+				width="400" height="300"
+				creationComplete ="initSockApp()">
+	
+	<mx:DataGrid id="dataGrd" width="350" height="200" dataProvider="{anonDataProvider}">       
+      <mx:columns>
+         <mx:DataGridColumn dataField="Key" />
+         <mx:DataGridColumn dataField="Value" />
+      </mx:columns>
+   </mx:DataGrid>
+   
+   <!--<mx:Button id="myButton" label="Trace out" click="traceDataArray();" />-->
+   
+    <mx:Script>
+        <![CDATA[
+			
+            import flash.events.*;
+			import flash.errors.*;
+			//import flash.net.URLLoader;
+			//import flash.net.URLRequest;
+			//import flash.net.URLRequestMethod;
+			import flash.net.Socket;
+			//import flash.net.XMLSocket;
+			import flash.display.Sprite;
+			import DeanonSocket;
+			import flash.system.Security;
+			
+			import mx.collections.ArrayCollection;
+			import org.osflash.thunderbolt.Logger;			
+			
+			//private var hostName:String = "http://what-is-my-ip-address.anonymous-proxy-servers.net/iptools?ip=1&method=FLASH";
+			
+			//private var rawSockHostName:String = "what-is-my-ip-address.anonymous-proxy-servers.net";
+			// testing only - jondos-srv
+			private var rawSockHostName:String = "87.230.20.187";
+			private var port:uint = 80;
+			
+			private var loader:URLLoader;
+			private var rawSock:DeanonSocket;
+			//private var xmlSock:DeanonSocket;
+			private var response:String;
+			
+			private var dataArray:Array;
+			private var dataGridArray:Array;
+			
+			/*private function cellPressed():void {
+				trace("Cell pressed");
+			}*/
+			
+			
+			[Bindable]
+			private var anonDataProvider:ArrayCollection;			
+			
+			private function initSockApp():void {
+				Logger.debug("Inizializing SockApp");
+				//Security.allowDomain("localhost");
+				Logger.debug(Security.sandboxType);
+				//Security.loadPolicyFile("http://87.230.20.187/apache2-default/policyfile.xml");
+				//Security.showSettings();
+				//Logger.debug("Loaded polixyfile.xml");
+				
+				if (rawSockHostName && port) {
+					try {
+						rawSock = new DeanonSocket(rawSockHostName, port);
+						rawSock.addEventListener(IOErrorEvent.IO_ERROR, handleIOError);
+						rawSock.addEventListener(DataEvent.DATA, rawSockDataHandler);
+						/*
+						if (!rawSock.connected) {
+							Logger.debug("RawSocket " + rawSock.connected + " / Setting up listeners...");
+							trace(rawSock.toString());
+						}*/
+					}
+					catch (error:ArgumentError) {
+						Logger.error("A XMLSocketArgumentError has occurred.");
+						trace("A XMLSocketArgumentError has occurred.");
+					}
+					catch (error:SecurityError) {
+						Logger.error("A XMLSocketSecurityError has occurred.");
+						trace("A XMLSocketSecurityError has occurred.");
+					}					
+				}
+			}
+			
+			public function rawSockDataHandler(base64String:DataEvent):void {
+				Logger.debug("...netIO performed successfully...");
+				var codedString:String = base64String.data;			
+				Logger.debug("Base64 raw: " + codedString);
+				
+				var decodedString:String = Base64.decode(codedString).toString();
+				Logger.debug("Base64 decoded: " + decodedString);
+				
+				var tmpArr:Array;
+				tmpArr = new Array();
+				
+				dataArray = new Array();
+				dataArray = decodedString.split(";");			
+				
+				for( var i:Number = 0; i < dataArray.length; i++) {
+					
+					var line:Array = new Array();
+					line = dataArray[i].split("=");
+					//trace("Row_" + i + ": " + line[0] + " " + line[1]);
+					//tmpArr.push(line);
+					
+					tmpArr.push( { Key:line[0], Value:line[1] } );
+					
+					//tmpArr.push(dataArray[i].split("="));				
+				}
+				
+				traceArray(tmpArr);
+				anonDataProvider = new ArrayCollection(tmpArr);
+			}
+			
+			private function completedDataHanlder(event:Event):void {
+				var codedString:String = loader.data;
+				var decodedString:String = Base64.decode(codedString).toString();
+				var tmpArr:Array;
+				Logger.debug("...netIO performed successfully...");
+				Logger.debug("Base64 raw: " + codedString);
+				Logger.debug("Base64 decoded: " + decodedString);
+				//trace("Base64 data received: " + codedString);				
+				//trace("Base64 data decoded: " + decodedString);
+				
+				dataArray = new Array();
+				dataArray = decodedString.split(";");
+				//traceArray(strArr);
+				
+				tmpArr = new Array();
+				
+				for( var i:Number = 0; i < dataArray.length; i++) {
+					
+					var line:Array = new Array();
+					line = dataArray[i].split("=");
+					//trace("Row_" + i + ": " + line[0] + " " + line[1]);
+					//tmpArr.push(line);
+					
+					tmpArr.push( { Key:line[0], Value:line[1] } );
+					
+					//tmpArr.push(dataArray[i].split("="));				
+				}
+				
+				traceArray(tmpArr);
+				anonDataProvider = new ArrayCollection(tmpArr);
+			}
+			
+			private function handleIOError(event:IOErrorEvent):void {
+				Logger.error("Server " + event.toString() + " not reachable!");
+			}
+			
+			private function traceArray(arr:Array):void {
+				for ( var i:Number = 0; i < arr.length; i++) {
+					
+					Logger.debug("Key: " + arr[i]['Key'] + " -> Val: " + arr[i]['Value']);
+					//trace("Key: " + arr[i]['Key'] + " / Val: " + arr[i]['Value']);
+					//trace("Sp1: " + arr[i][0] + " / Sp2: " + arr[i][1]);
+					//trace(arr[i]);
+				}
+			}
+			
+        ]]>
+    </mx:Script>
+   
+</mx:Application>
